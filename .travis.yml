@@ -3,14 +3,24 @@ sudo: required
 services:
   - docker
 
+# Create the react test
 before_install:
   - docker build -t siving/react-test -f ./client/Dockerfile.dev ./client
 
+# Run the react test
 script:
   - docker run -e CI=true siving/react-test npm test
 
 after_success:
+  # Build all production images
   - docker build -t siving/multi-client ./client
   - docker build -t siving/multi-nginx ./nginx
   - docker build -t siving/multi-server ./server
   - docker build -t siving/multi-worker ./worker
+  # Log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push siving/multi-client
+  - docker push siving/multi-nginx
+  - docker push siving/multi-server
+  - docker push siving/multi-worker
